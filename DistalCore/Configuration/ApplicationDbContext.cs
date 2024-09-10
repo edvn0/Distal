@@ -7,6 +7,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 {
     public DbSet<User> Users { get; set; }
     public DbSet<MeshFile> MeshFiles { get; set; }
+    public DbSet<MeshData> MeshData { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -24,5 +25,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<User>()
             .HasIndex(e => e.Email)
             .IsUnique();
+
+        builder.Entity<MeshFile>()
+           .HasOne(m => m.MeshData)
+           .WithOne(d => d.MeshFile)
+           .HasForeignKey<MeshData>(d => d.MeshFileId)
+           .OnDelete(DeleteBehavior.Cascade);
     }
 }

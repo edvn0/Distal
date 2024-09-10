@@ -53,7 +53,7 @@ public class UserService(ApplicationDbContext context) : IUserService
             Email = userEmail,
         };
 
-        context.Users.Add(user);
+        _ = await context.Users.AddAsync(user, cancellationToken);
         _ = await context.SaveChangesAsync(cancellationToken);
 
         return user;

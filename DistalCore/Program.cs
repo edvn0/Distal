@@ -40,6 +40,7 @@ builder.Services.Configure<JsonOptions>(options =>
 builder.Services.AddDistalEntityConfiguration(builder.Configuration);
 builder.Services.AddDistalServices();
 
+builder.Services.AddAntiforgery();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGenerationWithAuth(builder.Configuration);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -68,7 +69,10 @@ builder.Services.AddOpenTelemetry()
         tracing
             .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation();
-        tracing.AddOtlpExporter();
+
+        tracing.AddOtlpExporter(conf =>
+            conf.Endpoint = new Uri(builder.Configuration.GetConnectionString("OtelOtlpCollector")!)
+        );
     });
 
 var app = builder.Build();
@@ -100,6 +104,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+app.UseAntiforgery();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseHttpsRedirection();

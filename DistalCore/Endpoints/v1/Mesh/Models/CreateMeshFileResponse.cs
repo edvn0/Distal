@@ -8,5 +8,5 @@ public class CreateMeshFileResponse
     public required string Name { get; init; }
     public required MeshFormat Format { get; init; }
     public string? Description { get; init; }
-    public string? Tags { get; init; }
+    public IReadOnlyCollection<string> Tags { get; init; } = [];
 }

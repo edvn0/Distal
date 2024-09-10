@@ -13,24 +13,25 @@ public enum MeshFormat
 public class MeshFile
 {
     public Guid Id { get; set; }
-
     public required string Name { get; set; }
-    public MeshFormat Format { get; set; }
-    public long Size { get; set; }
-    public required byte[] Content { get; set; }
+    public required MeshFormat Format { get; set; }
+    public long Size => MeshData?.Size ?? 0;
+    public bool Valid => MeshData is not null && Size > 0;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; }
+    public required DateTime UpdatedAt { get; set; }
 
     /// <summary>
     /// Foreign key reference to the user who uploaded the file
     /// </summary>
-    public Guid UserId { get; set; }
+    public required Guid UserId { get; set; }
     /// <summary>
     /// Navigation property for the user
     /// </summary>
     public required User User { get; set; }
 
+    public MeshData? MeshData { get; set; }
+
     public string? Description { get; set; }
-    public string? Tags { get; set; }
+    public IList<string> Tags { get; } = [];
 }

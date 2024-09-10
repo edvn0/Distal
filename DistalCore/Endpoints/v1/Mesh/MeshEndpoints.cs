@@ -12,35 +12,64 @@ public static class MeshEndpoints
     {
         var group = builder.MapGroup("v1/mesh").RequireAuthorization();
 
-        group.MapGet("", async (ClaimsPrincipal principal, CancellationToken cancellationToken, [FromServices] IMeshService service) =>
+        group.MapGet("{id:guid}", async (ClaimsPrincipal principal, Guid id, CancellationToken cancellationToken, [FromServices] IMeshService service) =>
         {
-            return await service.GetAllMeshFilesAsync(cancellationToken);
+            var meshFile = await service.GetMeshFileByIdAsync(id, cancellationToken);
+            if (meshFile is null)
+                return Results.NotFound(new { Message = "Mesh file not found." });
+
+            return Results.Ok(MapToResponse(meshFile));
         });
 
-        group.MapPost("", async (ClaimsPrincipal principal, [FromServices] IUserService userService, [FromServices] IMeshService meshService, [FromBody] CreateMeshFileRequest modelDto) =>
+        group.MapPost("", async (ClaimsPrincipal principal, [FromServices] IUserService userService, [FromServices] IMeshService meshService,
+            [FromBody] CreateMeshFileRequest modelDto) =>
         {
             var user = await userService.GetOrCreateUserAsync(principal);
 
-            if (user.MeshFiles.Count > user.UploadLimit) return Results.BadRequest(new { Message = "Upload limit is reached." });
+            if (user.MeshFiles.Count > user.UploadLimit)
+                return Results.BadRequest(new { Message = "Upload limit is reached." });
 
-            return Results.Ok(MapToResponse(await meshService.CreateAsync(MapToMeshFile(user, modelDto))));
-        });
-    }
+            var meshFile = new MeshFile
+            {
+                Name = modelDto.Name,
+                Format = modelDto.Format,
+                Description = modelDto.Description,
+                User = user,
+                UserId = user.Id,
+                UpdatedAt = DateTime.UtcNow,
+            };
 
-    private static MeshFile MapToMeshFile(DistalCore.Models.User user, CreateMeshFileRequest createModelFileRequest)
-    {
-        var byteArray = Convert.FromBase64String(createModelFileRequest.ContentBase64);
-        return new()
+            foreach (var tag in modelDto.Tags)
+            {
+                meshFile.Tags.Add(tag);
+            }
+
+            var createdMeshFile = await meshService.CreateMetadataAsync(meshFile);
+
+            if (createdMeshFile is null)
+                return Results.BadRequest();
+
+            return Results.Ok(createdMeshFile.Id);
+        }).Produces<Guid?>().DisableAntiforgery();
+
+        group.MapPut("{id:guid}/content", async (Guid id, ClaimsPrincipal principal, [FromServices] IUserService userService, [FromServices] IMeshService meshService,
+            IFormFile content) =>
         {
-            Id = Guid.NewGuid(),
-            Name = createModelFileRequest.Name,
-            Content = byteArray,
-            User = user,
-            Size = byteArray.Length * sizeof(byte),
-            Format = createModelFileRequest.Format,
-            Description = createModelFileRequest.Description,
-            Tags = createModelFileRequest.Tags,
-        };
+            var user = await userService.GetOrCreateUserAsync(principal);
+
+            var meshFile = await meshService.GetMeshFileByIdAsync(id);
+            if (meshFile == null)
+                return Results.NotFound(new { Message = "Mesh file not found." });
+
+            if (meshFile.UserId != user.Id)
+                return Results.Forbid();
+
+            using var stream = content.OpenReadStream();
+
+            var updatedMeshFile = await meshService.UploadFileContentAsync(meshFile, stream);
+
+            return Results.Ok(MapToResponse(updatedMeshFile));
+        }).Produces<CreateMeshFileResponse?>().DisableAntiforgery();
     }
 
     private static CreateMeshFileResponse? MapToResponse(MeshFile? file)
@@ -53,7 +82,7 @@ public static class MeshEndpoints
             Name = file.Name,
             Format = file.Format,
             Description = file.Description,
-            Tags = file.Tags
+            Tags = file.Tags.ToList(),
         };
     }
 }
