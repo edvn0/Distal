@@ -18,7 +18,8 @@
                 "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
             },
             "env": {
-                "ASPNETCORE_ENVIRONMENT": "Development"
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ConnectionStrings:DistalContext": "Server=localhost;Port=5432;User Id=postgres_admin;Password=2tvHVcf7VfmT20YBs339H8DMF08GyTXq;Database=postgres_kc;"
             },
             "sourceFileMap": {
                 "/Views": "${workspaceFolder}/Views"

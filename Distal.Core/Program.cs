@@ -39,6 +39,7 @@ builder.Services.Configure<JsonOptions>(options =>
 
 builder.Services.AddDistalEntityConfiguration(builder.Configuration);
 builder.Services.AddDistalServices();
+builder.Services.AddMeshFileParsers();
 
 builder.Services.AddAntiforgery();
 builder.Services.AddEndpointsApiExplorer();

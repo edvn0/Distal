@@ -1,7 +1,12 @@
+using System.Net;
 using System.Security.Claims;
+using System.Text.Json;
 using Distal.Core.Endpoints.v1.Mesh.Models;
 using Distal.Core.Models;
+using Distal.Core.Models.Formats;
 using Distal.Core.Services;
+using Distal.Core.Services.Implementations;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Distal.Core.Endpoints.v1.Mesh;
@@ -21,8 +26,13 @@ public static class MeshEndpoints
             return Results.Ok(MapToResponse(meshFile));
         });
 
-        group.MapPost("", async (ClaimsPrincipal principal, [FromServices] IUserService userService, [FromServices] IMeshService meshService,
-            [FromBody] CreateMeshFileRequest modelDto) =>
+        group.MapGet("search", async (string? name, CancellationToken cancellationToken, [FromServices] IMeshService service) =>
+        {
+            var searchResult = await service.SearchByParametersAsync(new(name));
+            return Results.Ok(searchResult.Select(MapToResponse));
+        });
+
+        group.MapPost("", async (ClaimsPrincipal principal, [FromBody] CreateMeshFileRequest modelDto, [FromServices] IUserService userService, [FromServices] IMeshService meshService) =>
         {
             var user = await userService.GetOrCreateUserAsync(principal);
 
@@ -52,8 +62,8 @@ public static class MeshEndpoints
             return Results.Ok(createdMeshFile.Id);
         }).Produces<Guid?>().DisableAntiforgery();
 
-        group.MapPut("{id:guid}/content", async (Guid id, ClaimsPrincipal principal, [FromServices] IUserService userService, [FromServices] IMeshService meshService,
-            IFormFile content) =>
+        group.MapPut("{id:guid}/content", async (Guid id, ClaimsPrincipal principal, IFormFile content, CancellationToken cancellationToken, [FromServices] IUserService userService, [FromServices] IMeshService meshService,
+            [FromServices] IMeshFileParserFactory factory) =>
         {
             var user = await userService.GetOrCreateUserAsync(principal);
 
@@ -65,11 +75,31 @@ public static class MeshEndpoints
                 return Results.Forbid();
 
             using var stream = content.OpenReadStream();
+            using var parsingStream = new MemoryStream(10 * 1024);
+            using var uploadStream = new MemoryStream(10 * 1024);
 
-            var updatedMeshFile = await meshService.UploadFileContentAsync(meshFile, stream);
+            await stream.CopyToAsync(parsingStream, cancellationToken);
+            await stream.CopyToAsync(uploadStream, cancellationToken);
 
-            return Results.Ok(MapToResponse(updatedMeshFile));
-        }).Produces<CreateMeshFileResponse?>().DisableAntiforgery();
+            parsingStream.Position = 0;
+            uploadStream.Position = 0;
+
+            var parser = factory.GetParser(meshFile.Format);
+            var parsingTask = parser.ParseFromStreamAsync(parsingStream, cancellationToken: cancellationToken);
+            var updatedMeshFileTask = meshService.UploadFileContentAsync(meshFile, uploadStream, cancellationToken);
+
+            await Task.WhenAll(parsingTask, updatedMeshFileTask);
+
+            return Results.Ok(MapToResponse(await updatedMeshFileTask));
+        })
+            .Produces<CreateMeshFileResponse?>()
+            .Produces<NotFoundResult>(StatusCodes.Status404NotFound)
+            .Produces<ForbidResult>(StatusCodes.Status403Forbidden)
+            .WithName("Put Mesh Content")
+            .WithDisplayName("Put Mesh Content")
+            .WithDescription("Puts the mesh data (from a file, stream, binary stream) into the meshdata of the specified id.")
+            .Accepts<IFormFile>("multipart/form-data")
+            .DisableAntiforgery();
     }
 
     private static CreateMeshFileResponse? MapToResponse(MeshFile? file)

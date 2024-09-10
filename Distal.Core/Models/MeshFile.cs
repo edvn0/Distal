@@ -33,5 +33,5 @@ public class MeshFile
     public MeshData? MeshData { get; set; }
 
     public string? Description { get; set; }
-    public IList<string> Tags { get; } = [];
+    public IList<string> Tags { get; set; } = [];
 }
