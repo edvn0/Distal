@@ -1,15 +1,18 @@
+using DistalCore.Configuration;
+using DistalCore.Endpoints.v1.Mesh;
+using DistalCore.Endpoints.v1.User;
+using DistalCore.Exceptions;
 using DistalCore.Extensions;
-using System.Security.Claims;
+using DistalCore.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
+using Microsoft.AspNetCore.Http.Json;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.AspNetCore.Mvc;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using System.Text.Json;
-using System.Net;
-using DistalCore.Options;
-using DistalCore.Exceptions;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +31,15 @@ builder.Services.AddHttpClient("Random", client =>
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.Timeout = TimeSpan.FromSeconds(found.Random.Timeout);
 });
+
+builder.Services.Configure<JsonOptions>(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+
+builder.Services.AddDistalEntityConfiguration(builder.Configuration);
+builder.Services.AddDistalServices();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGenerationWithAuth(builder.Configuration);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -72,39 +84,29 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        await context.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database.");
+    }
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseHttpsRedirection();
 
-app.MapGet("users/me", (ClaimsPrincipal principal, [FromServices] ILogger<Program> logger, [FromServices] IHttpClientFactory factory) =>
-{
-    var client = factory.CreateClient("Random");
-    var claims = principal.Claims;
-    Dictionary<string, List<string>> typeValues = [];
-    foreach (var claim in claims)
-    {
-        if (!typeValues.TryAdd(claim.Type, [claim.Value]))
-        {
-            typeValues[claim.Type].Add(claim.Value);
-        }
-    }
-    return Results.Ok(typeValues);
-}).RequireAuthorization();
-
-app.MapGet("test", (ClaimsPrincipal principal, [FromServices] ILogger<Program> logger, [FromServices] IHttpClientFactory factory) =>
-{
-    var client = factory.CreateClient("Random");
-    var claims = principal.Claims;
-    Dictionary<string, List<string>> typeValues = [];
-    foreach (var claim in claims)
-    {
-        if (!typeValues.TryAdd(claim.Type, [claim.Value]))
-        {
-            typeValues[claim.Type].Add(claim.Value);
-        }
-    }
-    return Results.Ok(typeValues);
-});
+var baseGroup = app.MapGroup("api");
+MeshEndpoints.MapEndpoints(baseGroup);
+UserEndpoints.MapEndpoints(baseGroup);
 
 app.Run();
 
