@@ -3,9 +3,9 @@ version: '3.7'
 services:
   distalcore:
     image: ${DOCKER_REGISTRY-}distalcore
-    container_name: DistalCore
+    container_name: Distal.Core
     build:
-      context: ./DistalCore
+      context: ./Distal.Core
       dockerfile: Dockerfile
     depends_on:
       - keycloak
@@ -29,19 +29,19 @@ services:
     container_name: keycloak
     command: start-dev
     environment:
-      KC_HOSTNAME: localhost
-      KC_HOSTNAME_PORT: 3000
-      KC_HOSTNAME_STRICT_BACKCHANNEL: false
-      KC_HTTP_ENABLED: true
-      KC_HOSTNAME_STRICT_HTTPS: false
-      KC_HEALTH_ENABLED: true
-      KC_METRICS_ENABLED: true
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres/postgres_kc
-      KC_DB_USERNAME: postgres_admin
-      KC_DB_PASSWORD: postgres_admin_password
+      - KC_HOSTNAME=localhost
+      - KC_HOSTNAME_PORT=3000
+      - KC_HOSTNAME_STRICT_BACKCHANNEL=false
+      - KC_HTTP_ENABLED=true
+      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HEALTH_ENABLED=true
+      - KC_METRICS_ENABLED=true
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres/${POSTGRES_DB}
+      - KC_DB_USERNAME=${POSTGRES_USER}
+      - KC_DB_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - 7850:8080
       - 7851:9000
@@ -56,9 +56,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: postgres_kc
-      POSTGRES_USER: postgres_admin
-      POSTGRES_PASSWORD: postgres_admin_password
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
   jaeger:
     image: jaegertracing/all-in-one:latest
@@ -82,8 +82,8 @@ services:
     ports:
       - "8888:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: pgadmin@distal.com
-      PGADMIN_DEFAULT_PASSWORD: pgadmin_password
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_USER}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
     volumes:
       - pgadmin-data:/var/lib/pgadmin
     logging:

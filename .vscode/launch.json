@@ -9,9 +9,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/DistalCore/bin/Debug/net8.0/DistalCore.dll",
+            "program": "${workspaceFolder}/Distal.Core/bin/Debug/net8.0/Distal.Core.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/DistalCore",
+            "cwd": "${workspaceFolder}/Distal.Core",
             "stopAtEntry": false,
             "serverReadyAction": {
                 "action": "openExternally",

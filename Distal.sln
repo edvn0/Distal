@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistalCore", "DistalCore\DistalCore.csproj", "{1F6B7B30-73E1-4990-A198-96AD9836B0AA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Distal.Core", "Distal.Core\Distal.Core.csproj", "{1F6B7B30-73E1-4990-A198-96AD9836B0AA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
