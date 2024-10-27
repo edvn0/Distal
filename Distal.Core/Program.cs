@@ -114,5 +114,6 @@ var baseGroup = app.MapGroup("api");
 MeshEndpoints.MapEndpoints(baseGroup);
 UserEndpoints.MapEndpoints(baseGroup);
 
-app.Run();
+
+await app.RunAsync();
 
