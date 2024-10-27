@@ -6,7 +6,7 @@ using Distal.Core.Models.Maths;
 
 namespace Distal.Core.Services.Implementations;
 
-internal static partial class WavefrontRegex
+public static partial class WavefrontRegex
 {
     [GeneratedRegex(@"^v\s+(-?\d+\.?\d*)\s+(-?\d+\.?\d*)\s+(-?\d+\.?\d*)$")]
     public static partial Regex Vertex();
@@ -14,13 +14,14 @@ internal static partial class WavefrontRegex
     public static partial Regex Normal();
     [GeneratedRegex(@"^vt\s+(-?\d+\.?\d*)\s+(-?\d+\.?\d*)$")]
     public static partial Regex Texture();
-    [GeneratedRegex(@"^f\s+((?:\d+(?:/\d*){0,2}\s*)+)$")]
+    [GeneratedRegex(@"^f\s+((?:\d+(?:/\d+)?(?:/\d+)?\s*)+)$")]
     public static partial Regex Face();
+
 }
 
 public class WavefrontMeshFileParser : IMeshFileParser
 {
-    private const int MaxFileSize = 100 * 1024 * 1024; // 100 MB limit
+    public const int MaxFileSize = 100 * 1024 * 1024; // 100 MB limit
 
     public async Task<IParseableMeshFileFormat?> ParseFromStreamAsync(Stream? fileStream, ParseConfiguration configuration = default, CancellationToken cancellationToken = default)
     {
@@ -40,7 +41,7 @@ public class WavefrontMeshFileParser : IMeshFileParser
             lineNumber++;
             try
             {
-                ParseLine(line.Trim(), wavefront);
+                ParseLine(line.Trim(), ref wavefront);
             }
             catch (Exception ex)
             {
@@ -51,7 +52,7 @@ public class WavefrontMeshFileParser : IMeshFileParser
         return wavefront.IsValid() ? wavefront : null;
     }
 
-    private void ParseLine(string line, Wavefront wavefront)
+    private static void ParseLine(string line, ref Wavefront wavefront)
     {
         if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#'))
             return;
@@ -66,7 +67,7 @@ public class WavefrontMeshFileParser : IMeshFileParser
             wavefront.Faces.Add(face);
     }
 
-    private bool TryParseVertex(string line, out Vector3f vertex)
+    private static bool TryParseVertex(string line, out Vector3f vertex)
     {
         var match = WavefrontRegex.Vertex().Match(line);
         if (match.Success)
@@ -83,7 +84,7 @@ public class WavefrontMeshFileParser : IMeshFileParser
         return false;
     }
 
-    private bool TryParseNormal(string line, out Vector3f normal)
+    private static bool TryParseNormal(string line, out Vector3f normal)
     {
         var match = WavefrontRegex.Normal().Match(line);
         if (match.Success)
@@ -100,7 +101,7 @@ public class WavefrontMeshFileParser : IMeshFileParser
         return false;
     }
 
-    private bool TryParseTextureCoordinate(string line, out Vector2f texCoord)
+    private static bool TryParseTextureCoordinate(string line, out Vector2f texCoord)
     {
         var match = WavefrontRegex.Texture().Match(line);
         if (match.Success)
@@ -116,7 +117,7 @@ public class WavefrontMeshFileParser : IMeshFileParser
         return false;
     }
 
-    private bool TryParseFace(string line, out Face face)
+    private static bool TryParseFace(string line, out Face face)
     {
         var match = WavefrontRegex.Face().Match(line);
         if (match.Success)

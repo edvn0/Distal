@@ -4,6 +4,7 @@
 
 .env
 
+
 ### Angular ###
 ## Angular ##
 # compiled output
@@ -735,3 +736,5 @@ $RECYCLE.BIN/
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/dotnetcore,csharp,windows,macos,linux,visualstudiocode,visualstudio,vim,vue,angular
+
+!Distal.Core.Tests/TestData/Meshes/*.obj
