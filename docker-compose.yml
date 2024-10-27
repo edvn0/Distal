@@ -17,9 +17,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_HTTP_PORTS: 8080
       ASPNETCORE_HTTPS_PORTS: 8081
+      ASPNETCORE_Kestrel__Certificates__Default__Path: /https/edwin98dahlberg.se/fullchain.pem
+      ASPNETCORE_Kestrel__Certificates__Default__KeyPath: /https/edwin98dahlberg.se/privkey.pem
     volumes:
-      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
-      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      - /etc/letsencrypt/live/edwin98dahlberg.se:/https/edwin98dahlberg.se:ro
     profiles:
       - full
 
