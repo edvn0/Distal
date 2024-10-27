@@ -1,8 +1,6 @@
-version: '3.7'
-
 services:
   distalcore:
-    image: ${DOCKER_REGISTRY-}distalcore
+    image: edwin98carlsson/distal.core:main
     container_name: Distal.Core
     build:
       context: ./Distal.Core
@@ -17,8 +15,6 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_HTTP_PORTS: 8080
       ASPNETCORE_HTTPS_PORTS: 8081
-      ASPNETCORE_Kestrel__Certificates__Default__Path: /https/edwin98dahlberg.se/fullchain.pem
-      ASPNETCORE_Kestrel__Certificates__Default__KeyPath: /https/edwin98dahlberg.se/privkey.pem
     volumes:
       - /etc/letsencrypt/live/edwin98dahlberg.se:/https/edwin98dahlberg.se:ro
     profiles:
