@@ -24,4 +24,4 @@ RUN dotnet publish "./Distal.Core.csproj" -c $BUILD_CONFIGURATION -o /app/publis
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "Distal.Core.dll"]
+ENTRYPOINT ["dotnet", "Distal.Core.dll", "--launch-profile", "Container"]

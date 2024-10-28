@@ -6,6 +6,7 @@ using Distal.Core.Extensions;
 using Distal.Core.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Json;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -36,6 +37,12 @@ builder.Services.AddHttpClient("Random", client =>
 builder.Services.Configure<JsonOptions>(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 });
 
 builder.Services.AddDistalEntityConfiguration(builder.Configuration);
@@ -78,18 +85,15 @@ builder.Services.AddOpenTelemetry()
     });
 
 var app = builder.Build();
-LogHttpsFolderContents(app);
 
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(e =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(e =>
-    {
-        e.DocumentTitle = "Distal Core (Swagger)";
-        e.OAuthClientId("distal-public");
-        e.OAuthScopes("profile", "openid");
-    });
-}
+    e.DocumentTitle = "Distal Core (Swagger)";
+    e.OAuthClientId("distal-public");
+    e.OAuthScopes("profile", "openid");
+});
+app.UseForwardedHeaders();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -118,46 +122,3 @@ UserEndpoints.MapEndpoints(baseGroup);
 
 
 await app.RunAsync();
-
-static void LogHttpsFolderContents(WebApplication? app)
-{
-    if (app is null) return;
-    using var scope = app.Services.CreateScope();
-
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    const string httpsDirectoryPath = "/https";
-
-    try
-    {
-        if (Directory.Exists(httpsDirectoryPath))
-        {
-            var dirInfo = new DirectoryInfo(httpsDirectoryPath);
-            logger.LogInformation("Logging contents of /https directory:");
-
-            LogDirectoryContents(dirInfo, logger);
-        }
-        else
-        {
-            logger.LogWarning("The /https directory does not exist.");
-        }
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "An error occurred while logging /https folder contents.");
-    }
-}
-
-static void LogDirectoryContents(DirectoryInfo directory, ILogger logger)
-{
-    foreach (var file in directory.GetFiles())
-    {
-        var permissions = file.Attributes.ToString();
-        logger.LogInformation("File: {Path} | Mode: {Permissions}", file.FullName, permissions);
-    }
-
-    foreach (var subDir in directory.GetDirectories())
-    {
-        LogDirectoryContents(subDir, logger);
-    }
-}
-
