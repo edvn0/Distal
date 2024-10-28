@@ -8,12 +8,19 @@ services:
     depends_on:
       - keycloak
       - postgres
+    restart: always
     ports:
-      - 5001:8081
+      - 5001:5001
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_HTTPS_PORTS: 8081
-      "ConnectionStrings:DistalContext": "Host=postgres;Port=5432;User Id=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Database=${POSTGRES_DB};"
+      ASPNETCORE_HTTPS_PORTS: 5001
+      Keycloak__AuthorizationUrl: https://edwin98dahlberg.se/keycloak/realms/distal-core/protocol/openid-connect/auth
+      Authentication__MetadataAddress: https://edwin98dahlberg.se/keycloak/realms/distal-core/.well-known/openid-configuration
+      Authentication__ValidIssuer: https://edwin98dahlberg.se/keycloak/realms/distal-core
+      Authentication__Authority: https://edwin98dahlberg.se/keycloak/realms/distal-core
+      Authentication__Audience: account
+      ConnectionStrings__DistalContext: "Host=postgres;Port=5432;User Id=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Database=${POSTGRES_DB};"
+      ConnectionStrings__OtelConnectionString: "http://jaeger:4317"
       ASPNETCORE_Kestrel__Certificates__Default__Path: /https/live/edwin98dahlberg.se/fullchain.pem
       ASPNETCORE_Kestrel__Certificates__Default__KeyPath: /https/live/edwin98dahlberg.se/privkey.pem
     volumes:
@@ -25,8 +32,10 @@ services:
     container_name: keycloak
     command: start
     environment:
-      - KC_HOSTNAME=localhost
-      - KC_HOSTNAME_PORT=3000
+
+      - KC_HOSTNAME=edwin98dahlberg.se
+      - KC_HTTP_RELATIVE_PATH=/keycloak
+      - KC_PROXY_HEADERS=xforwarded
       - KC_HOSTNAME_STRICT_BACKCHANNEL=false
       - KC_HTTP_ENABLED=true
       - KC_HOSTNAME_STRICT_HTTPS=false
@@ -69,7 +78,8 @@ services:
       - "14268:14268"
       - "9411:9411"
     environment:
-      COLLECTOR_ZIPKIN_HTTP_PORT: "9411"
+      - COLLECTOR_ZIPKIN_HTTP_PORT="9411"
+      - JAEGER_QUERY_BASE_PATH=/jaeger
   
   pgadmin:
     image: dpage/pgadmin4
@@ -78,10 +88,12 @@ services:
     depends_on:
       - postgres
     ports:
-      - "8888:80"
+      - "8888:4321"
     environment:
+      - PGADMIN_LISTEN_PORT=4321
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_USER}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+      - PGADMIN_CONFIG_SERVER_PATH='/pgadmin'
     volumes:
       - pgadmin-data:/var/lib/pgadmin
     logging:

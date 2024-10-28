@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Distal.Core.Configuration;
 using Distal.Core.Endpoints.v1.Mesh;
 using Distal.Core.Endpoints.v1.User;
@@ -12,8 +14,6 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -99,6 +99,11 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
 
+    // Log all info in the Keycloak configuration
+    var keycloakConfig = app.Configuration.GetSection("Keycloak");
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Keycloak::AuthorizationUrl: {AuthorizationUrl}", keycloakConfig["AuthorizationUrl"]);
+
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
@@ -106,7 +111,6 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while migrating the database.");
     }
 }
@@ -117,6 +121,7 @@ app.UseAuthorization();
 app.UseHttpsRedirection();
 
 var baseGroup = app.MapGroup("api");
+app.MapGet("", () => new { Message = "Welcome to the Distal Core API" }).Produces(StatusCodes.Status200OK, contentType: "application/json");
 MeshEndpoints.MapEndpoints(baseGroup);
 UserEndpoints.MapEndpoints(baseGroup);
 
