@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Security.Claims;
+using System.Security.Principal;
 using Distal.Core.Configuration;
 using Distal.Core.Exceptions;
 using Distal.Core.Models;
@@ -17,7 +18,7 @@ internal readonly struct KeycloakClaims
 
 public interface IUserService
 {
-    Task<User> GetOrCreateUserAsync(ClaimsPrincipal claimsPrincipal, CancellationToken cancellationToken = default);
+    Task<User> GetOrCreateUserAsync(IPrincipal principal, CancellationToken cancellationToken = default);
     Task<IEnumerable<User>> GetAllUsersAsync(CancellationToken cancellationToken = default);
 }
 
@@ -28,8 +29,13 @@ public class UserService(ApplicationDbContext context) : IUserService
         return await context.Users.ToListAsync(cancellationToken);
     }
 
-    public async Task<User> GetOrCreateUserAsync(ClaimsPrincipal claimsPrincipal, CancellationToken cancellationToken = default)
+    public async Task<User> GetOrCreateUserAsync(IPrincipal principal, CancellationToken cancellationToken = default)
     {
+        if (principal is not ClaimsPrincipal claimsPrincipal)
+        {
+            throw new UnauthorizedAccessException("Invalid principal");
+        }
+
         var userIdString = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var userEmail = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value;
 

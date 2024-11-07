@@ -32,7 +32,7 @@ public class WavefrontMeshFileParser : IMeshFileParser
             throw new InvalidOperationException($"File size exceeds the maximum limit of {MaxFileSize / (1024 * 1024)} MB.");
 
         var wavefront = new Wavefront();
-        using var reader = new StreamReader(fileStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true);
+        using var reader = new StreamReader(fileStream, Encoding.UTF8, bufferSize: 4096, leaveOpen: true);
 
         string? line;
         int lineNumber = 0;

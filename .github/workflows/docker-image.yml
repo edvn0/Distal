@@ -61,7 +61,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
           echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login --username $username --password-stdin
-      - name: Build Docker image
+      - name: Build Docker image (Backend)
         run: docker build Distal.Core --file Distal.Core/Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/distal.core:${{ github.ref_name }}
+      - name: Build Docker image (Frontend)
+        run: docker build Distal.UI --file Distal.UI/Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/distal.ui:${{ github.ref_name }}
       - name: Push Docker image
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/distal.core:${{ github.ref_name }}
+      - name: Push Docker image
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/distal.ui:${{ github.ref_name }}

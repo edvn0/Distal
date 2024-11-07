@@ -27,6 +27,20 @@ services:
       - /etc/letsencrypt/live/edwin98dahlberg.se:/https/live/edwin98dahlberg.se:ro
       - /etc/letsencrypt/archive/edwin98dahlberg.se:/https/archive/edwin98dahlberg.se:ro
 
+  distalui:
+    image: edwin98carlsson/distal.ui:main
+    container_name: distal.ui
+    build:
+      context: ./Distal.UI
+      dockerfile: Dockerfile
+    depends_on:
+      - distalcore
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+    restart: always
+
   keycloak:
     image: keycloak/keycloak:latest
     container_name: keycloak

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Security.Claims;
+using System.Security.Principal;
 using System.Text.Json;
 using Distal.Core.Endpoints.v1.Mesh.Models;
 using Distal.Core.Models;
@@ -32,7 +33,7 @@ public static class MeshEndpoints
             return Results.Ok(searchResult.Select(MapToResponse));
         });
 
-        group.MapPost("", async (ClaimsPrincipal principal, [FromBody] CreateMeshFileRequest modelDto, [FromServices] IUserService userService, [FromServices] IMeshService meshService) =>
+        group.MapPost("", async (IPrincipal principal, [FromBody] CreateMeshFileRequest modelDto, [FromServices] IUserService userService, [FromServices] IMeshService meshService) =>
         {
             var user = await userService.GetOrCreateUserAsync(principal);
 
@@ -62,7 +63,7 @@ public static class MeshEndpoints
             return Results.Ok(createdMeshFile.Id);
         }).Produces<Guid?>().DisableAntiforgery();
 
-        group.MapPut("{id:guid}/content", async (Guid id, ClaimsPrincipal principal, IFormFile content, CancellationToken cancellationToken, [FromServices] IUserService userService, [FromServices] IMeshService meshService,
+        group.MapPut("{id:guid}/content", async (Guid id, IPrincipal principal, IFormFile content, CancellationToken cancellationToken, [FromServices] IUserService userService, [FromServices] IMeshService meshService,
             [FromServices] IMeshFileParserFactory factory) =>
         {
             var user = await userService.GetOrCreateUserAsync(principal);
