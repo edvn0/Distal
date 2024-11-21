@@ -9,6 +9,7 @@
     "test": "ng test",
     "serve:ssr:distal.ui": "node dist/distal.ui/server/server.mjs"
   },
+  "packageManager": "pnpm@9.14.2",
   "private": true,
   "dependencies": {
     "@angular/animations": "^18.2.0",

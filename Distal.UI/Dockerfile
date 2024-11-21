@@ -1,23 +1,26 @@
-FROM node:18 AS build
+FROM node:20-slim AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
 WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm install
-
 COPY . .
-RUN npm run build
 
-FROM node:18
+FROM base AS prod-deps
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
 
-WORKDIR /app
+FROM base AS build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN pnpm run build
 
-COPY --from=build /app/dist /app/dist
-COPY --from=build /app/package.json /app/package.json
-COPY --from=build /app/server.ts /app/server.ts
+FROM node:20-slim AS runtime
+ENV NODE_ENV=production
+RUN apt update && apt install -y tree && apt clean && rm -rf /var/lib/apt/lists/*
 
-RUN npm install --omit=dev
+COPY --from=build /app/dist dist
+COPY --from=prod-deps /app/package.json package.json
+COPY --from=prod-deps /app/server.ts server.ts
 
 EXPOSE 4000
 
-CMD ["node", "dist/distal.ui/server/server.mjs"]
+CMD ["node", "./dist/distal.ui/server/server.mjs"]
